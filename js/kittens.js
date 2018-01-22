@@ -3,34 +3,56 @@ var GAME_WIDTH = 375;
 var GAME_HEIGHT = 500;
 
 var ENEMY_WIDTH = 75;
-var ENEMY_HEIGHT = 156;
+var ENEMY_HEIGHT = 100;
 var MAX_ENEMIES = 3;
+
+var BONUS_WIDTH = 75;
+var BONUS_HEIGHT = 75;
+var MAX_BONUS = 1;
 
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
-/*
-var BULLET_WIDTH = 20;
-var BULLET_HEIGHT = 20;
-*/
+var PLAYER_LIVES = 3;
+
+var LIVE_WIDTH = 20;
+var LIVE_HEIGHT = 20;
+
+// var BULLET_WIDTH = 10;
+// var BULLET_HEIGHT = 10;
+// var MAX_BULLETS = 2;
+
 // These two constants keep us from using "magic numbers" in our code
-var LEFT_ARROW_CODE = 37;
-var RIGHT_ARROW_CODE = 39;
-var UP_ARROW_CODE = 38;
-var DOWN_ARROW_CODE = 40;
+var Q_CODE = 81;
+var D_CODE = 68;
+var Z_CODE = 90;
+var S_CODE = 83;
+var SPACE_CODE = 32;
+var ENTER_CODE = 13;
 
 // These two constants allow us to DRY
 var MOVE_LEFT = 'left';
 var MOVE_RIGHT = 'right';
 var MOVE_UP = "up";
 var MOVE_DOWN = "down";
+var KEY_SPACE = "space";
+
+
 
 // Preload game images
 var images = {};
-['enemy.png', 'stars.png', 'player.png'].forEach(imgName => {
+['enemy.png', 'stars.png', 'player.png', 'live.png', 'live1.png', 'live2.png', 'snake.png', 'stone2.png', 'coin.png'].forEach(imgName => {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
 });
+
+
+var music0 = document.getElementById("audioPlayer");
+var contact = document.getElementById("collision");
+var lose = document.getElementById("lose");
+var coin = document.getElementById("coin");
+this.music0.volume = 0.5;
+
 
 
 
@@ -43,21 +65,62 @@ class Entity {
     }
 }
 
+class Bonus extends Entity {
+    constructor(xPos) {
+        super();
+        this.x = xPos;
+        this.y = -BONUS_HEIGHT;
+        this.speed = 0.5;
+        this.sprite = images['coin.png']
+    }
+    update(timeDiff) {
+        this.y = this.y + timeDiff * this.speed;
+    }
+}
+
 class Enemy extends Entity {
     constructor(xPos) {
         super();
         this.x = xPos;
         this.y = -ENEMY_HEIGHT;
-        this.sprite = images['enemy.png'];
-
-        // Each enemy should have a different speed
         this.speed = Math.random() / 2 + 0.25;
+        if(this.speed < 0.65 && this.speed > 0.54) {
+            this.sprite = images['enemy.png'];
+        }else if(this.speed <0.55 ) {
+            this.sprite = images['stone2.png'];
+            
+        }else if(this.speed > 0.64) {
+            this.sprite = images['snake.png'];
+        }
+        // Each enemy should have a different speed 
     }
 
     update(timeDiff) {
         this.y = this.y + timeDiff * this.speed;
     }
 }
+
+class Lives extends Entity {
+    constructor() {
+        super();
+        this.x = LIVE_WIDTH;
+        this.y = LIVE_HEIGHT;
+        this.sprite = images['live.png'];
+    }
+}
+
+// class Bullets extends Entity {
+//     constructor(xPos, yPos) {
+//         super();
+//         this.x = xPos;
+//         this.y = yPos;
+//         this.sprite = images['bullet.png'];
+//         this.speed = 0.25;
+//     }
+//     update(timeDiff) {
+//         this.y = this.y + timeDiff * this.speed;
+//     }
+// }
 
 class Player extends Entity {
     constructor() {
@@ -66,6 +129,7 @@ class Player extends Entity {
         this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
         this.sprite = images['player.png'];
     }
+
 
     // This method is called by the game engine when left/right arrows are pressed
     move(direction) {
@@ -83,17 +147,6 @@ class Player extends Entity {
         }
     }
 }
-/*
-class Bullets extends Entity {
-    constructor() {
-        super();
-        this.x = xPos;
-        this.y = -BULLET_HEIGHT;
-        this.speed = 1;
-    }
-}
-
-*/
 
 
 /*
@@ -106,8 +159,17 @@ class Engine {
         // Setup the player
         this.player = new Player();
 
+        // Setup the lives
+        this.lives = new Lives();
+
         // Setup enemies, making sure there are always three
         this.setupEnemies();
+
+        // Setup bullets
+        // this.setupBullets();
+
+        //Setup bonus
+        this.setupBonus();
 
         // Setup the <canvas> element where we will be drawing
         var canvas = document.createElement('canvas');
@@ -135,6 +197,23 @@ class Engine {
         }
     }
 
+    setupBonus() {
+        if (!this.bonus) {
+            this.bonus = [];
+        }
+
+        while (this.bonus.filter(e => !!e).length < MAX_BONUS) {
+            this.addBonus();
+        }
+    }
+
+    // setupBullets() {
+    //     if(!this.bullets) {
+    //         this.bullets = []
+    //     }
+    //         this.addBullets();
+    // }
+
     // This method finds a random spot where there is no enemy, and puts one in there
     addEnemy() {
         var enemySpots = GAME_WIDTH / ENEMY_WIDTH;
@@ -148,23 +227,52 @@ class Engine {
         this.enemies[enemySpot] = new Enemy((enemySpot) * ENEMY_WIDTH);
     }
 
+    addBonus() {
+        var bonusSpots = GAME_WIDTH / BONUS_WIDTH;
+
+        var bonusSpot;
+        // Keep looping until we find a free enemy spot at random
+        while (!bonusSpots || this.bonus[bonusSpot]) {
+            bonusSpot = Math.floor(Math.random() * bonusSpots);
+        }
+
+        this.bonus[bonusSpot] = new Bonus((bonusSpot) * BONUS_WIDTH);
+    }
+
+    // addBullets() {
+    //     var bulletSpots = this.player.x;
+    //     var bulletSpot;
+    //     if(!bulletSpots) {
+    //         this.bullets[bulletSpot] = new Bullets(this.player.x, this.player.y);
+    //        }
+        
+    // }
+      
+    
+
     // This method kicks off the game
     start() {
+        
         this.score = 0;
         this.lastFrame = Date.now();
-
+        // this.ctx.fillText('PRESS SPACE TO PLAY', 20, 300);
+        // document.addEventListener("keydown", f => {
+        //     if (f.keyCode === SPACE_CODE) {
+                
+        //     }
+        // });
         // Listen for keyboard left/right and update the player
         document.addEventListener('keydown', e => {
-            if (e.keyCode === LEFT_ARROW_CODE) {
+            if (e.keyCode === Q_CODE) {
                 this.player.move(MOVE_LEFT);
             }
-            else if (e.keyCode === RIGHT_ARROW_CODE) {
+            else if (e.keyCode === D_CODE) {
                 this.player.move(MOVE_RIGHT);
             }
-            else if (e.keyCode === UP_ARROW_CODE) {
+            else if (e.keyCode === Z_CODE) {
                 this.player.move(MOVE_UP);
             }
-            else if (e.keyCode === DOWN_ARROW_CODE) {
+            else if (e.keyCode === S_CODE) {
                 this.player.move(MOVE_DOWN);
             }
         });
@@ -183,6 +291,11 @@ class Engine {
     You should use this parameter to scale your update appropriately
      */
     gameLoop() {
+        this.contact = contact;
+        this.music0 = music0;
+        this.lose = lose;
+        this.coin = coin;
+        
         // Check how long it's been since last frame
         var currentFrame = Date.now();
         var timeDiff = currentFrame - this.lastFrame;
@@ -192,11 +305,17 @@ class Engine {
 
         // Call update on all enemies
         this.enemies.forEach(enemy => enemy.update(timeDiff));
+        this.bonus.forEach(bon => bon.update(timeDiff));
+        // this.bullets.forEach(bullet => bullet.update(timeDiff));
 
         // Draw everything!
         this.ctx.drawImage(images['stars.png'], 0, 0); // draw the star bg
-        this.enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
+         
+        this.enemies.forEach(enemy => enemy.render(this.ctx));// draw the enemies
+        this.bonus.forEach(bon => bon.render(this.ctx));
         this.player.render(this.ctx); // draw the player
+        // this.bullets.forEach(bullet => bullet.render(this.ctx));
+
 
         // Check if any enemies should die
         this.enemies.forEach((enemy, enemyIdx) => {
@@ -206,33 +325,89 @@ class Engine {
         });
         this.setupEnemies();
 
+        this.bonus.forEach((bon, bonusIdx) => {
+            if (bon.y > GAME_HEIGHT) {
+                delete this.bonus[bonusIdx];
+            }
+        });
+        this.setupBonus();
+
+        // Check if any bullet should die
+        // this.bullets.forEach((bullet, bulletIdx) => {
+        //     if (bullet.y < GAME_HEIGHT) {
+        //         delete this.bullet[bulletIdx];
+        //     }
+        // });
+        // this.setupBullets();
+
         // Check if player is dead
-        if (this.isPlayerDead()) {
+        if (this.isPlayerDead() && PLAYER_LIVES < 1) {
             // If they are dead, then it's game over!
             this.ctx.font = 'bold 30px Impact';
-            this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(this.score + ' GAME OVER', 5, 30);
+            this.ctx.fillStyle = '#6F2F15';
+            this.ctx.fillText("SCORE: " + this.score, 115, 200);
+            this.ctx.fillText('GAME OVER', 120, 100);
+            this.playAgain();
+            this.music0.pause();
+            this.lose.play();
+
         }
         else {
             // If player is not dead, then draw the score
             this.ctx.font = 'bold 30px Impact';
-            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillStyle = '#6F2F15';
             this.ctx.fillText(this.score, 5, 30);
-
+            for(var i = 0; i < 5; i++) {
+                if(this.bonus[i] !== undefined && this.player.x === this.bonus[i].x && (this.bonus[i].y + BONUS_HEIGHT) > this.player.y && !(this.bonus[i].y > this.player.y)) {
+                    this.score += 1000;
+                    this.coin.play();
+                    delete this.bonus[i];
+                   
+                }
+            }
+            if(PLAYER_LIVES === 3) {
+                this.ctx.drawImage(images['live.png'], 10, 50)
+                this.ctx.drawImage(images['live1.png'], 60, 50)
+                this.ctx.drawImage(images['live2.png'], 110, 50)
+            } else if(PLAYER_LIVES === 2) {
+                this.ctx.drawImage(images['live.png'], 10, 50)
+                this.ctx.drawImage(images['live1.png'], 60, 50)
+                
+                
+            } else {
+                this.ctx.drawImage(images['live.png'], 10, 50)
+                
+            }
             // Set the time marker and redraw
             this.lastFrame = Date.now();
             requestAnimationFrame(this.gameLoop);
         }
     }
 
+        
+
     isPlayerDead() {
-       /* for(var i = 0; i < 5; i++) {
-            if(this.enemies[i] !== undefined && this.player.x === this.enemies[i].x && (this.enemies[i].y + ENEMY_HEIGHT) > this.player.y) {
-                return true;
+        for(var i = 0; i < 5; i++) {
+            if(this.enemies[i] !== undefined && this.player.x === this.enemies[i].x && (this.enemies[i].y + ENEMY_HEIGHT) > this.player.y && !(this.enemies[i].y > this.player.y)) {
+                this.contact.play();
+                PLAYER_LIVES--;
+                delete this.enemies[i];
+                return true;  
             }
-        }*/
-        return false;
+        }
+        return false;      
     }
+
+
+    playAgain() {
+        this.ctx.fillText('PRESS SPACE TO PLAY AGAIN', 20, 350);
+        document.addEventListener("keydown", f => {
+            if (f.keyCode === SPACE_CODE) {
+                location.reload();
+            }
+        });
+    }
+
     
 }
 
@@ -241,5 +416,10 @@ class Engine {
 
 
 // This section will start the game
-var gameEngine = new Engine(document.getElementById('app'));
-gameEngine.start();
+function startGame() {
+    var gameEngine = new Engine(document.getElementById('app'));
+    gameEngine.start();    
+}
+
+startGame();
+

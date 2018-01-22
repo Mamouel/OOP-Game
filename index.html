@@ -3,10 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="style.css" />
     <title>Exploding Kittens</title>
+    
 </head>
+
 <body>
-    <div id="app"></div>
+    <div id="audio">
+        <audio id="audioPlayer" src="images/horseRace.mp3" autoplay="autoplay" loop="loop"></audio>
+        <audio id="collision" src="images/collision.mp3"></audio>
+        <audio id="lose" src="images/lose.mp3"></audio>
+        <audio id="coin" src="images/coin.mp3"></audio>
+        <!-- <object type="audio/mpeg" data="images/collision.mp3">
+            <param name="collision.mp3" value="collision.mp3" />
+            <param name="autostart" value="false" />
+            <param name="loop" value="false" />
+        </object> -->
+    </div>
+    <header>
+    <div></div>
+    </header>
+        <div id="content">
+            <div id="instructions">
+                <img src="images/leftBar.jpg"/>
+            </div>
+            <div id="app"></div>
+            <img src="images/rightBar.jpg"/>
+        </div>
     <script src="js/kittens.js"></script>
 </body>
 </html>
